@@ -16,7 +16,7 @@ node_modules/.bin/esbuild dist/main.js --bundle --outfile=build/tst --platform=n
 
 cd build
 
-echo "#! env node" > tst.cjs
+echo "#!/usr/bin/env node" > tst.cjs
 ../node_modules/.bin/minify --js < tst >> tst.cjs
 rm tst
 chmod +x tst.cjs
