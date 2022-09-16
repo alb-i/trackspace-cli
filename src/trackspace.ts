@@ -270,7 +270,6 @@ export class TrackSpaceAPI {
             cookieMap = updated.cookieMap
         }
 
-
         cookies = ''
 
         cookieMap.forEach((v, k, a) => {
@@ -322,6 +321,14 @@ export class TrackSpaceAPI {
 
             let url = response.headers.get('location')
 
+            if (! url?.startsWith('https://')) {
+                url = `${this.config.endpoint}${url}`
+            }
+
+            if (this.verbose) {
+                console.log(`  .. received URL: ${url}`)
+            }
+
             let payload2 = {
                 '2fpin': this.query.getPin(this.interactiveConfig),
                 'atl_token': '$atl_token',
@@ -343,16 +350,55 @@ export class TrackSpaceAPI {
                 redirect: manual
             }
 
-            response = await fetch(decodeURI(url!), options3)
+            response = await fetch(url, options3)
+
+            
+            cookies = response.headers.get('set-cookie')
+
+            if (cookies) {
+                let updated = updateCookies(cookies, response.headers.raw()['set-cookie'])
+
+                cookies = updated.cookies
+                cookieMap = updated.cookieMap
+            }
+
+            cookies = ''
+
+            cookieMap.forEach((v, k, a) => {
+                if (cookies != '') cookies = cookies + '; '
+                cookies = cookies + v
+            })
+
+            this.cookieMap = cookieMap
+            this.cookies = cookies
+
+            
 
             if (this.verbose) {
+                
                 console.log("Login Step 4 (2FA)")
                 console.log(response)
                 console.log(response.headers)
-                console.log(response.headers.get('location'))
+                console.log(" ... redirect location: ", response.headers.get('location'))
+
+                console.log("Cookie-Response: ", response.headers.raw()['set-cookie'])
+                console.log("Cookies: ", cookies)
             }
 
             // validate the PIN
+
+            options2 = {
+                method: 'GET',
+                headers: {
+                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+                    'Cookie': cookies,
+                    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:103.0) Gecko/20100101 Firefox/103.0',
+                    'Origin': `${this.config.endpoint}`,
+                    'Referer': `${this.config.endpoint}${this.config.loginPath}`,
+                    'DNT': '1'
+                },
+                redirect: manual
+            }
 
             response = await fetch(`${this.config.endpoint}/`, options2)
 
@@ -369,6 +415,14 @@ export class TrackSpaceAPI {
                 return true
             } else {
                 console.log("2FA PIN validation failed.")
+
+                if (this.verbose) {
+                    console.log("Response URL: ", response.headers.get('location'))
+                    console.log("Response Status: ",response.status)
+                }
+
+                if (this.config.storeCookies)
+                this.storeCookies()
                 return false
             }
         } else if (response.status == 200) {
