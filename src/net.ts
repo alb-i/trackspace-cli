@@ -10,7 +10,13 @@ import httpsProxyAgent from 'https-proxy-agent'
 const {HttpsProxyAgent} = httpsProxyAgent
 
 
-let proxyAgent : any;
+let proxyAgent : any
+
+let verbose = false
+
+export function setVerbose(enabled:boolean) {
+    verbose = enabled
+}
 
 /**
  * Sets the proxy URL
@@ -54,12 +60,40 @@ export async function fetch(url:RequestInfo, init?:RequestInit) : Promise<Respon
         await new Promise(resolve => setTimeout(resolve, (thisRequest-requestsDone)*waitAmountFactor + waitAmount))
     }
 
-    let r = await fetch0(url,{...init0,...init})
+    let r : Response
+
+    let retryCount = 0
+    let doRetry = true
+
+    while (doRetry && retryCount < 4) {
+        doRetry = false
+        retryCount += 1
+        try {
+            r = await fetch0(url,{...init0,...init})
+        }
+        catch (error:any) {
+
+            if (verbose) {
+                console.log("Received error upon fetch: ",error)
+                console.log("  ... for url",url)
+            }
+
+            if (error.message.code === 'ETIMEDOUT') {
+                if (verbose)
+                    console.log("Attempting rety.")
+                doRetry = true
+
+                await new Promise(resolve => setTimeout(resolve, 3000))
+            } else {
+                throw(error)
+            }
+        }
+    }
 
     // let the next request in
     requestsDone += 1
 
-    return r
+    return r!
 }
 
 

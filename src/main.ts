@@ -15,7 +15,7 @@ import { TstConfig, initialConfig, QueryConfigStdin, dotPath, defaultConfigPath 
 import commandLineArgs from 'command-line-args'
 import commandLineUsage from 'command-line-usage'
 
-import { setConcurrency, setProxy } from './net.js'
+import { setConcurrency, setProxy, setVerbose} from './net.js'
 
 
 import { setPrintOptions, printResults } from './print-results.js'
@@ -34,6 +34,8 @@ import chalk from 'chalk'
 
   let verbose = options.verbose
   if (verbose) console.log('CLI options:', options)
+
+  setVerbose(verbose)
 
   if (options.unordered !== undefined) {
     options.ordered = false

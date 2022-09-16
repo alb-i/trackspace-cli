@@ -4,7 +4,7 @@
  */
 import { TstConfig, QueryConfig } from './config.js'
 
-import { fetch, updateCookies } from './net.js'
+import { fetch, updateCookies} from './net.js'
 
 import { URLSearchParams } from 'url'
 import { RequestRedirect, RequestInit, RequestInfo, Response } from 'node-fetch'
