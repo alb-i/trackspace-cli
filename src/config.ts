@@ -58,6 +58,7 @@ export const shortHands = {
     'create':['submit','create-issue'],
     'todo': ['do','put','to do'],
     'progress': ['do','put','in progress'],
+    'hold': ['do','put','on hold'],
     'select': ['do','put','selected'],
     'done': ['submit','done'],
     '++': ['add','comment'],
