@@ -96,15 +96,17 @@ export function printResults(command: string, result: any) {
         console.log(JSON.stringify(result, replacer, space))
     } else {
 
-        if (needToSeparate && command != 'show') {
+        if (needToSeparate && command != 'show' && command != 'items') {
             console.log('')
             console.log(chalk.gray('--8<----->8--'))
+            console.log('')
+        } else if (needToSeparate && command == 'items') {
             console.log('')
         }
 
         needToSeparate = true
 
-        if (command != 'show') {
+        if (command != 'show' && command != 'items') {
             if (result['tst-search-query'] != undefined) {
                 console.log(`${chalk.white('Search Query')}: ${chalk.bold(chalk.red(result['tst-search-query']))}`)
             }
@@ -288,6 +290,47 @@ export function printResults(command: string, result: any) {
 
                 console.log(chalkTable(options, table))
                 console.log()
+                break;
+            }
+            case 'items': {
+
+                let key = result['tst-items-key']
+
+                let items : any[] = result['items']
+
+                items.forEach((v,idx,a)=> {
+
+                    if (v.isHeader) {
+
+                        console.log(`${chalk.whiteBright(key)}    ${chalk.bold(v.name)}`)
+
+                    } else {
+
+                        let isChecked = v.checked ? chalk.greenBright("[x]") : ( v.mandatory ? chalk.red("[ ]") : chalk.green("[ ]"))
+
+                        var index
+                        if (idx < 9) {
+                            index = ` ${idx+1}`
+                        } else index = `${idx+1}`
+
+                        console.log(`${chalk.whiteBright(key)} ${index}  ${isChecked} ${v.name}`)
+                    }
+                })
+
+                needToSeparate = items.length > 0
+
+                break;
+            }
+
+            case 'done': {
+                let key = result['key']
+                let success = result['success']
+
+                if (success == 'no') {
+                    console.log(`${chalk.bold(chalk.whiteBright(key))} ${chalk.red('-/->')} done. Reason: ${chalk.bold(chalk.red(result['hint']))}`)
+                } else {
+                    console.log(`${chalk.bold(chalk.whiteBright(key))} ${chalk.green('--->')} done. (probably)`)
+                }
                 break;
             }
             case 'browse': {

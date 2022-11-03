@@ -24,6 +24,7 @@ export interface TstConfig {
 
     // probably static settings
     endpoint?: string
+    todoListField? : string
 
     // even more obscure settings
     loginPath?: string
@@ -72,6 +73,7 @@ export const defaultConfig: TstConfig = {
     endpoint: 'https://trackspace.lhsystems.com',
     loginPath: '/login.jsp',
     pinPathEnd: 'pinvalidation',
+    todoListField: 'customfield_24106',
     storeCookies: true,
     loadCookies: true,
     askLogin: true,

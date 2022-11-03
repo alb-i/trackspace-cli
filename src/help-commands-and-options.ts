@@ -67,6 +67,10 @@ const commandHelp = [
         summary: 'Obtain all comments for the given list of trackspace keys (`ABC-123`, etc.)'
     },
     {
+        name: '{bold items}',
+        summary: 'Obtain all DoD check items for the given list of trackspace keys (`ABC-123`, etc.)'
+    },
+    {
         name: '{bold add} {underline kind} {italic [...]}',
         summary: 'Adds a piece of information of the given {underline kind} to an issue. See below for more information.'
     },
@@ -80,24 +84,36 @@ const commandHelp = [
     },
     {
         name: '{bold do} {underline action} {italic [options...]} {italic keys...}',
-        summary: 'Performs an {underline action} on the given list of trackspacke keys (`ABC-123`). See below for a list of supported actions.'
+        summary: 'Performs an {underline action} on the given list of trackspace keys (`ABC-123`). See below for a list of supported actions.'
     },
     {
-        name: '{bold id}',
+        name: '{bold id} {italic keys...}',
         summary: 'Use the browse-API to convert the given list of trackspace keys (`ABC-123`, etc.) to issue IDs.'
     },
     {
-        name: '{bold summary}',
+        name: '{bold summary} {italic keys...}',
         summary: 'Obtain the issue summary for the given list of issue ids, or keys.'
     },
     {
-        name: '{bold watch}',
+        name: '{bold watch} {italic keys...}',
         summary: 'Start watching the issues from the given list of issue ids, or keys.'
     },
     {
-        name: '{bold unwatch}',
+        name: '{bold unwatch} {italic keys...}',
         summary: 'Stop watching the issues from the given list of issue ids, or keys.'
     },
+    {
+        name: '{bold relax} {italic keys...}',
+        summary: 'Make all open and unchecked DoD check items non-mandatory for the given list of issue ids, or keys.'
+    },
+    {
+        name: '{bold check} {italic key} {italic item-numbers...} ',
+        summary: 'Check items with the given numbers on the DoD list for the given trackspace key.'
+    },
+    {
+        name: '{bold uncheck} {italic key} {italic item-numbers...} ',
+        summary: 'Uncheck items with the given numbers on the DoD list for the given trackspace key.'
+    }
 
 
 ]
@@ -111,8 +127,12 @@ const doHelp = [
 
 const addHelp = [
     {
+        name: '{bold checkitem} {underline key} {italic item-text...}',
+        summary: 'Adds a new check item to the DoD-Checklist of the issue with the given {underline key}. The text of the item is composed from the remaining arguments.'
+    },
+    {
         name: '{bold comment} {underline key} {italic body...}',
-        summary: 'Adds a comment to the issue with the give {underline key} (`ABC-123`, etc.). The contents of the comment are composed from the remaining arguments.'
+        summary: 'Adds a comment to the issue with the given {underline key} (`ABC-123`, etc.). The contents of the comment are composed from the remaining arguments.'
     }
 ]
 

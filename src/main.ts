@@ -346,6 +346,35 @@ import chalk from 'chalk'
             }
             break;
           }
+          case 'items': {
+
+            processingStep = (x: any, q: string) => {
+              let keys: string[] = x.issueTable.issueKeys
+
+              let test = limitArray(keys.length)
+
+              keys.forEach((v, i, a) => {
+
+                if (test(i) == false)
+                  return
+
+                async function thisPromise(lp: Promise<any> | undefined) {
+                  return ts.getChecklist(`${v}`).then(async (s) => {
+
+                    if (lp !== undefined) {
+                      await lp
+                    }
+
+                    let result = augmentResult({ 'items': s, 'tst-items-key': v }, q, i, x.issueTable.total, undefined, v)
+                    printResults(options.process, result)
+                  })
+                }
+                lastPromise = thisPromise(lastPromise)
+              })
+
+            }
+            break;
+          }
           case 'print': {
             break;
           }
@@ -392,6 +421,20 @@ import chalk from 'chalk'
 
         break;
       }
+      case 'items': {
+        let args: string[] = options.command!
+
+
+        args.forEach((v, i, a) => {
+          ts.getChecklist(v).then(
+            (x) => {
+              printResults('items', { ...{ 'tst-items-key': v, 'items': x } })
+            }
+          )
+        })
+
+        break;
+      }
       case 'id': {
         let args: string[] = options.command!
 
@@ -415,6 +458,20 @@ import chalk from 'chalk'
           ts.unwatch(v).then(
             (x) => {
               printResults(cmd, { ...{ 'tst-unwatch-id': v }, ...x })
+            }
+          )
+        })
+
+        break;
+      }
+      case 'relax': {
+        let args: string[] = options.command!
+
+
+        args.forEach((v, i, a) => {
+          ts.relaxChecklist(v).then(
+            (x) => {
+              printResults(cmd, { ...{ 'tst-relax-id': v }, ...x })
             }
           )
         })
@@ -471,6 +528,7 @@ import chalk from 'chalk'
         console.log(commandLineUsage(usageSections()))
         break;
       }
+      
       case 'submit': {
         let kind = options.command[0]
         options.command.shift()
@@ -584,11 +642,47 @@ import chalk from 'chalk'
             printResults(`add-${kind}`, json)
             break;
           }
+          case 'checkitem': {
+            let issueKey = options.command[0]
+            options.command.shift()
+            let body = options.command.join(' ')
+
+            let json = await ts.addChecklistItem(issueKey, body)
+
+            printResults(`add-${kind}`, json)
+            break;
+          }
           default: {
             console.log(`Unknown thing to add ${kind}. Run 'tst help' for long help.`)
             break;
           }
         }
+        break;
+      }
+
+      case 'check': {
+        let key = options.command[0]
+        options.command.shift()
+
+        let args: string[] = options.command
+
+        let result = await ts.checkItems(key,args)
+
+        printResults('check', result)
+
+        break;
+      }
+
+      case 'uncheck': {
+        let key = options.command[0]
+        options.command.shift()
+
+        let args: string[] = options.command
+
+        let result = await ts.checkItems(key,args,false)
+
+        printResults('uncheck', result)
+
         break;
       }
 

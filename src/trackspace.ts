@@ -4,7 +4,7 @@
  */
 import { TstConfig, QueryConfig } from './config.js'
 
-import { fetch, updateCookies} from './net.js'
+import { fetch, updateCookies } from './net.js'
 
 import { URLSearchParams } from 'url'
 import { RequestRedirect, RequestInit, RequestInfo, Response } from 'node-fetch'
@@ -321,7 +321,7 @@ export class TrackSpaceAPI {
 
             let url = response.headers.get('location')
 
-            if (! url?.startsWith('https://')) {
+            if (!url?.startsWith('https://')) {
                 url = `${this.config.endpoint}${url}`
             }
 
@@ -352,7 +352,7 @@ export class TrackSpaceAPI {
 
             response = await fetch(url, options3)
 
-            
+
             cookies = response.headers.get('set-cookie')
 
             if (cookies) {
@@ -372,10 +372,10 @@ export class TrackSpaceAPI {
             this.cookieMap = cookieMap
             this.cookies = cookies
 
-            
+
 
             if (this.verbose) {
-                
+
                 console.log("Login Step 4 (2FA)")
                 console.log(response)
                 console.log(response.headers)
@@ -418,11 +418,11 @@ export class TrackSpaceAPI {
 
                 if (this.verbose) {
                     console.log("Response URL: ", response.headers.get('location'))
-                    console.log("Response Status: ",response.status)
+                    console.log("Response Status: ", response.status)
                 }
 
                 if (this.config.storeCookies)
-                this.storeCookies()
+                    this.storeCookies()
                 return false
             }
         } else if (response.status == 200) {
@@ -783,6 +783,16 @@ export class TrackSpaceAPI {
             }
         }
 
+        if (options?.putJsonData !== undefined) {
+            requestOptions = {
+                ...requestOptions, ...{
+                    headers: { ...requestOptions.headers, ...{ 'Content-Type': 'application/json' } },
+                    method: 'PUT',
+                    body: JSON.stringify(options.putJsonData)
+                }
+            }
+        }
+
         if (options?.method) {
             requestOptions = { ...requestOptions, ...{ method: options.method } }
         }
@@ -992,7 +1002,7 @@ export class TrackSpaceAPI {
         }
 
 
-        function collectText(itemSelector:any) {
+        function collectText(itemSelector: any) {
             let text = ''
             $(itemSelector).children().map((idx, elt) => {
                 let t = $(elt).text().trim()
@@ -1027,29 +1037,29 @@ export class TrackSpaceAPI {
 
         let inputs: any = {}
 
-        let processItem = (idx:number, elt:any) => {
+        let processItem = (idx: number, elt: any) => {
             let e = $(elt)
 
             if (e.attr()['name'] !== undefined) {
 
 
-             
-                let options :any = {}
 
-                let defaultOption : any = undefined
+                let options: any = {}
 
-                e.find('option').each((idx, elt)=> {
+                let defaultOption: any = undefined
+
+                e.find('option').each((idx, elt) => {
                     let e0 = $(elt)
-                    let label =collectText(elt).trim()
+                    let label = collectText(elt).trim()
 
-                    let thisOpt = Object.fromEntries([[label, 
+                    let thisOpt = Object.fromEntries([[label,
                         e0.attr()['value']]])
 
                     if (e0.attr()['selected'] !== undefined) {
                         defaultOption = label
                     }
 
-                    options = {...options,...thisOpt}
+                    options = { ...options, ...thisOpt }
 
                 })
 
@@ -1060,8 +1070,8 @@ export class TrackSpaceAPI {
                     value: e.attr()['value'],
                     type: e.attr()['type'],
                     id: e.attr()['id'],
-                    options:options,
-                    defaultOption:defaultOption
+                    options: options,
+                    defaultOption: defaultOption
                 }
 
 
@@ -1077,15 +1087,15 @@ export class TrackSpaceAPI {
         $('select').each(processItem)
         $('textarea').each(processItem)
 
-        let labels :any = {}
+        let labels: any = {}
 
-        $('*[for]').each((idx,elt)=>{
+        $('*[for]').each((idx, elt) => {
             let e = $(elt)
 
             let label = collectText(elt)
             let for_ = e.attr()['for']
 
-            labels = {...labels, ...Object.fromEntries([[for_, label]])}
+            labels = { ...labels, ...Object.fromEntries([[for_, label]]) }
         })
 
 
@@ -1108,7 +1118,24 @@ export class TrackSpaceAPI {
      * 
      * @returns   result
      */
-    async makeDone(key:string, json: any, defaultVal?: any | undefined) {
+    async makeDone(key: string, json: any, defaultVal?: any | undefined) {
+
+        // Check whether there are open check items in the DoD list
+
+        let checkitems: any[] = await this.getChecklist(key)
+
+        var allGood = true
+
+        checkitems.forEach((v, idx, a) => {
+            if (!v.isHeader) {
+                if (v.mandatory && !v.checked)
+                    allGood = false
+            }
+        })
+
+        if (!allGood) {
+            return { 'key': key, 'body': checkitems, 'success': 'no', 'hint': 'Some mandatory check-items are not checked.' }
+        }
 
         // get the form for default values etc.
         let form = await this.doneForm(key)
@@ -1126,7 +1153,7 @@ export class TrackSpaceAPI {
         let formValues = new Map<string, any>()
 
 
-        Object.keys(form.fields).forEach((k,i,a)=> {
+        Object.keys(form.fields).forEach((k, i, a) => {
             let f = form.fields[k]
 
             if (f.value !== undefined) {
@@ -1149,7 +1176,7 @@ export class TrackSpaceAPI {
         let r = await this.apiCall(c)
 
 
-        return {'body': await r.text(), 'response':r}
+        return { 'key': key, 'body': await r.text(), 'success': 'maybe', 'response': r }
 
     }
     /**
@@ -1367,6 +1394,13 @@ export class TrackSpaceAPI {
         return { key: key, put: actions }
     }
 
+    /**
+     * Trigger an action on an issue
+     * 
+     * @param what  name of the action 
+     * @param key   item key to perform the action on
+     * @returns 
+     */
     async putAction(what: string, key: string) {
         if (isNaN(Number(what))) {
             let actions = (await this.scanActions(key)).put
@@ -1401,5 +1435,197 @@ export class TrackSpaceAPI {
 
         }
     }
+
+    async getChecklist(keyOrId: string) {
+        let id = await this.toId(keyOrId)
+        let fieldName: string = this.config.todoListField!
+
+        let c = this.api(`/rest/api/2/issue/${id}`, {
+            noXSRF: true
+        })
+
+        let r = await this.apiCall(c)
+
+        let rj: any = await r.json()
+
+        if ('fields' in rj) {
+            if (fieldName in rj.fields) {
+                return rj.fields[fieldName as keyof typeof rj.fields]
+            }
+        }
+
+        return []
+
+    }
+
+    /**
+     * unblock DoD check items in order to allow an issue to be closed with open items.
+     * 
+     * @param keyOrId 
+     * @returns 
+     */
+    async relaxChecklist(keyOrId: string) {
+
+        let currentList: any[] = await this.getChecklist(keyOrId)
+
+        let alteredList = currentList.map((v, idx, a) => {
+            if (!v.isHeader) {
+                if (v.mandatory && (!v.checked)) {
+                    return { ...v, ...{ 'mandatory': false } }
+                }
+            }
+            return v
+        })
+
+
+        let id = await this.toId(keyOrId)
+
+        let fieldName: string = this.config.todoListField!
+
+
+        let payload = {
+            'fields': Object.fromEntries(new Map([
+                [fieldName, alteredList]
+            ]))
+        }
+
+        let c = this.api(`/rest/api/2/issue/${id}`, {
+            putJsonData: payload,
+            noXSRF: true
+        })
+
+        let r = await this.apiCall(c)
+
+        if (r.status == 204) {
+            return { key: keyOrId, id: id, status: r.status, statusText: r.statusText }
+        }
+
+        return { key: keyOrId, id: id, status: r.status, statusText: r.statusText, result: await r.json() }
+
+    }
+
+    /** 
+    * check (or uncheck) items on DoD checklist
+    *
+  * @param keyOrId 
+  * @param itemNbrs 
+  * @param checkOrUncheck 
+  * @returns 
+  */
+    async checkItems(keyOrId: string, itemNbrs: string[], checkOrUncheck?: boolean) {
+
+        let targetState = (checkOrUncheck === undefined) ? true : checkOrUncheck
+
+        let currentList: any[] = await this.getChecklist(keyOrId)
+
+        let nbrs: number[] = itemNbrs.map((v, i, a) => {
+            return Number(v)
+        })
+
+        let alteredList = currentList.map((v, idx, a) => {
+            if (!v.isHeader) {
+
+                if (nbrs.includes(idx + 1)) {
+                    return { ...v, ...{ 'checked': targetState } }
+                }
+            }
+            return v
+        })
+
+
+        let id = await this.toId(keyOrId)
+
+        let fieldName: string = this.config.todoListField!
+
+
+        let payload = {
+            'fields': Object.fromEntries(new Map([
+                [fieldName, alteredList]
+            ]))
+        }
+
+        let c = this.api(`/rest/api/2/issue/${id}`, {
+            putJsonData: payload,
+            noXSRF: true
+        })
+
+        let r = await this.apiCall(c)
+
+        if (r.status == 204) {
+            return { key: keyOrId, id: id, status: r.status, statusText: r.statusText }
+        }
+
+        return { key: keyOrId, id: id, status: r.status, statusText: r.statusText, result: await r.json() }
+
+    }
+
+    async addChecklistItem(keyOrId: string, description: string, checked?: boolean, rank?: number, mandatory?: boolean) {
+        /*
+         * PUT https://trackspace.lhsystems.com/rest/api/2/issue/3733332
+         * 
+         * Checklist field should be customizable by config.
+         * 
+         * JSON Payload:
+         * 
+                {
+                    "fields": {
+                        "customfield_24106": [
+                            {
+                                "name": "Checkout .NET cross-platform GUI",
+                                "id": -1,
+                                "rank": 1,
+                                "checked": false,
+                                "globalItemId": null,
+                                "mandatory": true
+                            }
+                        ]
+                    }
+                }
+         */
+
+
+
+        let currentList = await this.getChecklist(keyOrId)
+
+        let id = await this.toId(keyOrId)
+
+        let fieldName: string = this.config.todoListField!
+
+        let isChecked: boolean = (checked === undefined || checked === null) ? false : checked
+        let setRank: number = (rank === undefined || rank === null) ? currentList.length : rank
+        let isMandatory: boolean = (mandatory === undefined || mandatory === null) ? true : mandatory
+
+        // we need to pull the current list and augment it with the new item
+
+        let payload = {
+            'fields': Object.fromEntries(new Map([
+                [fieldName, [...currentList, ...[{
+                    'name': description,
+                    'id': -1,
+                    'rank': setRank,
+                    'checked': isChecked,
+                    'globalItemId': null,
+                    'mandatory': isMandatory
+                }]]]
+            ]))
+        }
+
+        let c = this.api(`/rest/api/2/issue/${id}`, {
+            putJsonData: payload,
+            noXSRF: true
+        })
+
+        let r = await this.apiCall(c)
+
+        if (r.status == 204) {
+            return { key: keyOrId, id: id, status: r.status, statusText: r.statusText }
+        }
+
+
+
+        return { key: keyOrId, id: id, status: r.status, statusText: r.statusText, result: await r.json() }
+
+    }
+
 
 }
