@@ -22,9 +22,11 @@ export function setVerbose(enabled:boolean) {
  * Sets the proxy URL
  * 
  * @param proxyUrl    URL of the proxy, for instance, 'http://localhost:3128'
+ *                    an empty string will disable the proxy
  */
 export function setProxy(proxyUrl:string) {
-    proxyAgent = new HttpsProxyAgent(proxyUrl)
+    if (proxyUrl !== "")
+        proxyAgent = new HttpsProxyAgent(proxyUrl)
 }
 
 let requestsReceived : number = 0

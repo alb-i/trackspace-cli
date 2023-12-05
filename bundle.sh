@@ -16,6 +16,8 @@ node_modules/.bin/esbuild dist/main.js --bundle --outfile=build/tst --platform=n
 
 cd build
 
+echo 'tst' > .gitignore
+
 echo "#!/usr/bin/env node" > tst.cjs
 ../node_modules/.bin/minify --js < tst >> tst.cjs
 rm tst

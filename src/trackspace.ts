@@ -16,7 +16,7 @@ import { getAttributeValue } from 'domutils'
 
 
 
-function formEncode(payload: any) {
+function formEncode(payload: any):any {
     let data = new URLSearchParams()
 
     for (const k in payload) {
@@ -1332,9 +1332,26 @@ export class TrackSpaceAPI {
 
     }
 
+    async getAtlToken() {
+
+        let c = this.api('/secure/Dashboard.jspa')
+        let r = await this.apiCall(c)
+
+        let text = await r.text()
+
+        const regex = /&atl_token=[^"]*"/
+
+        let t1 = text.split("&atl_token=")
+        if (t1.length < 2) return ""
+        let t2 = t1[1].split('"')
+
+        return t2[0]
+
+    }
+
     /** put something into TODO goes through a link:
      * 
-     * /secure/WorkflowUIDispatcher.jspa?id=3649480&action=11&atl_token=B1CJ-HPIR-HN4W-VAJE_468513616c99414724bde14c06c2bb0d0b44c41d_lin
+     * /secure/WorkflowUIDispatcher.jspa?id=3649480&action=11&atl_token=xxxxx
      * 
      * GET /secure/WorkflowUIDispatcher.jspa
      * 
@@ -1352,46 +1369,86 @@ export class TrackSpaceAPI {
      * @returns a json describing the available actions
      */
     async scanActions(key: string) {
-        let response = this.apiCall(this.browseCall(key))
+        /* The scan broke on Nov 30, 2023; we still need to fetch id unfortunately .... */
 
-        let text = await (await response).text()
+        const workaround = true;
 
-        let $ = cheerio.load(text)
 
-        function collectText(item: any) {
-            let text = ''
-            item.children().map((idx: any, elt: any) => {
-                let t = $(elt).text().trim()
 
-                if (t != '') {
-                    if (text != '')
-                        text += '\n'
-                    text += t
+
+        if (workaround) {
+
+            let issueId = await this.toId(key)
+
+            
+            function mkDict(id0:number) : any {
+                return {id: id0, href:`/secure/WorkflowUIDispatcher.jspa?id=${issueId}&action=${id0}`
                 }
             }
-            )
-            if (text == '') {
-                text = item.text().trim()
+
+
+            return { key: key, put: 
+                {
+                    
+                    'to do':mkDict(11),
+                    'in progress':mkDict(21),
+                    'done':mkDict(31),
+                    'on hold':mkDict(41),
+                    'selected':mkDict(51),
+                } }
+
+        } else {
+            let response = this.apiCall(this.browseCall(key))
+
+            let text = await (await response).text()
+
+            if (this.verbose) {
+                console.log("scanActions: Response:")
+                console.log(text)
             }
-            return text
+
+            let $ = cheerio.load(text)
+
+            function collectText(item: any) {
+                let text = ''
+                item.children().map((idx: any, elt: any) => {
+                    let t = $(elt).text().trim()
+
+                    if (t != '') {
+                        if (text != '')
+                            text += '\n'
+                        text += t
+                    }
+                }
+                )
+                if (text == '') {
+                    text = item.text().trim()
+                }
+                return text
+            }
+
+            let actions: any = {}
+
+            $('*[id^="action_id_"]').each((i, e) => {
+                let elt = $(e)
+                let label = collectText(elt).trim().toLowerCase()
+
+                actions = {
+                    ...actions, ...Object.fromEntries([[label, {
+                        id: elt.attr('id')!.substring('action_id_'.length),
+                        href: elt.attr('href')
+                    }]])
+                }
+
+            })
+
+            if (this.verbose) {
+                console.log("Scanned actions:")
+                console.log(actions)
+            }
+
+            return { key: key, put: actions }
         }
-
-        let actions: any = {}
-
-        $('*[id^="action_id_"]').each((i, e) => {
-            let elt = $(e)
-            let label = collectText(elt).trim().toLowerCase()
-
-            actions = {
-                ...actions, ...Object.fromEntries([[label, {
-                    id: elt.attr('id')!.substring('action_id_'.length),
-                    href: elt.attr('href')
-                }]])
-            }
-
-        })
-
-        return { key: key, put: actions }
     }
 
     /**

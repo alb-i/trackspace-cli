@@ -66,9 +66,22 @@ import chalk from 'chalk'
   try {
     let data: string = readFileSync(options.config, 'utf8')
     config = JSON.parse(data)
-    if (verbose) console.log(`Read config file ${options.config}`)
+    
+    if (verbose) {
+      console.log(`Read config file ${options.config}`)
+    }
   } catch (error) {
     if (verbose) console.log(`Could not load config file ${options.config}:`, error)
+  }
+
+  try {
+    let data: string = readFileSync(options.secondconfig, 'utf8')
+    let second_config = JSON.parse(data)
+    if (verbose) console.log(`Read secand config file ${options.secondconfig}`)
+
+    config = {...config,...second_config}
+  } catch (error) {
+    if (verbose) console.log(`Could not load second config file ${options.secondconfig}:`, error)
   }
 
   if (verbose) console.log('Loaded config:', config)
@@ -79,7 +92,7 @@ import chalk from 'chalk'
 
   if (verbose) console.log('Effective config:', effectiveConfig)
 
-  if (effectiveConfig.setProxy !== undefined) {
+  if ((effectiveConfig.setProxy !== undefined)&&(effectiveConfig.setProxy !== null)) {
     if (verbose) console.log(`Setting proxy to ${effectiveConfig.setProxy}`)
     setProxy(effectiveConfig.setProxy)
   }

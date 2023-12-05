@@ -2,7 +2,7 @@
  * This module contains verbose descriptions of options and commands,
  * along with default settings.
  */
-import { configHelp, defaultConfigPath, defaultConfig } from './config.js'
+import { configHelp, defaultConfigPath, defaultLocalConfigPath, defaultConfig } from './config.js'
 
 import shellEscape from 'shell-escape'
 
@@ -25,7 +25,11 @@ export const optionDefinitions = [
     { name: 'command', alias: 'C', type: String, multiple: true, defaultOption: true, description: 'A (single) command sequence to run.' },
     {
         name: 'config', alias: 'c', type: String, defaultValue: defaultConfigPath, typeLabel: '{underline file}',
-        description: `Use the given configuration file instead of the standard configuration file at ${defaultConfigPath}`
+        description: `Use the given first configuration file instead of the standard configuration file at ${defaultConfigPath}`
+    },
+    {
+        name: 'secondconfig', type: String, defaultValue: defaultLocalConfigPath, typeLabel: '{underline file}',
+        description: `Use the given second configuration file instead of the standard second configuration file at ${defaultLocalConfigPath}. Values given in the second config override values from the first configuration file.`
     },
     { name: 'saveConfig', alias: '!', type: Boolean, defaultValue: false, description: 'Enables to save the configuration to the config-file path after running.' },
     { name: 'login', type: Boolean, defaultValue: false, description: 'Run the login process before doing any work.' },

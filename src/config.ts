@@ -6,8 +6,11 @@ import readlineSync from 'readline-sync'
 import os from 'os'
 import path from 'path'
 
+import child_process from 'node:child_process'
+
 export const dotPath = path.join(os.homedir(), '.trackspace')
 export const defaultConfigPath = path.join(dotPath, 'config.json')
+export const defaultLocalConfigPath = path.join(dotPath, 'config.2.json')
 export const defaultCookiePath = path.join(dotPath, 'cookies.txt')
 
 /**
@@ -21,6 +24,8 @@ export interface TstConfig {
     cookiePath?: string
     askLogin?: boolean
     testCredentials?: boolean
+    passwordCommandLine? : string
+    otpCommandLine? : string
 
     // probably static settings
     endpoint?: string
@@ -53,6 +58,7 @@ export const shortHands = {
     '@me-full': ['search', 'assignee = currentuser()'],
     '@closed':   ['search','assignee = currentuser() AND resolution != Unresolved'],
     '@work': ['search','assignee = currentuser() AND resolution = Unresolved AND status != "To Do"'],
+    '@now': ['search','assignee = currentuser() AND resolution = Unresolved AND status = "In Progress"'],
     'watching': ['search','watcher = currentuser()'],
     'watching-closed': ['search','watcher = currentuser() AND resolution != Unresolved'],
     'put':['do','put'],
@@ -63,6 +69,7 @@ export const shortHands = {
     'select': ['do','put','selected'],
     'done': ['submit','done'],
     '++': ['add','comment'],
+    '+': ['add','checkitem']
 }
 
 /** 
@@ -100,6 +107,10 @@ function defaultFor(key: string): string {
     return `(default: {italic unset} : {italic ${type}})`
 }
 
+function execSync(commandline : string) : string {
+    return child_process.execSync(commandline).toString()
+}
+
 /** settings help */
 
 export const configHelp = [
@@ -126,6 +137,14 @@ export const configHelp = [
     {
         name: 'askLogin',
         summary: 'If set, then the user will be asked for login credentials whenever a redirection to the login (or PIN validation) page is detected.'
+    },
+    {
+        name: 'passwordCommandLine',
+        summary: 'If set, then this command is run and the standard output is used as password if there is a login prompt. You may wish to combine this with "pass".'
+    },
+    {
+        name: 'otpCommandLine',
+        summary: 'If set, then this command is run and the standard output is used as PIN entry for the second factor simulation. You may wish to combine this with "pass otp".'
     },
     {
         name: 'testCredentials',
@@ -206,11 +225,25 @@ export class QueryConfigStdin implements QueryConfig {
     }
 
     getPassword(config: TstConfig): string {
-        return readlineSync.question('Enter password: ', { hideEchoBack: true })
+        let cfg = {...this.defaults, ...config}
+
+        if (cfg.passwordCommandLine === undefined) {
+            return readlineSync.question('Enter password: ', { hideEchoBack: true })
+        } else {
+            let result = execSync(cfg.passwordCommandLine)
+            return result.replace(/(\r|\n)*$/,"")
+        }
     }
 
     getPin(config: TstConfig): string {
-        return readlineSync.question('Enter 2FA PIN: ')
+        let cfg = {...this.defaults, ...config}
+
+        if (cfg.otpCommandLine === undefined) {
+            return readlineSync.question('Enter 2FA PIN: ')
+        } else {
+            let result = execSync(cfg.otpCommandLine)
+            return result.replace(/(\r|\n)*$/,"")
+        }
     }
 
     effective(config: TstConfig): TstConfig {
