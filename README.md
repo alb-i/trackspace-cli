@@ -1,3 +1,7 @@
+# Discontinuation Notice
+
+Recently, trackspace has changed the way the login works and I am not going to fix the code. This project is now discontinued.
+
 # Trackspace Tool
 
 Command-line interface to trackspace.
